@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
+from bboxCanvas import *
+
 
 class Player(QMainWindow):
     def __init__(self, data, *args, **kwargs):
@@ -19,10 +21,7 @@ class Player(QMainWindow):
         
         self.setWindowTitle("test")
         self.status={"playing":False}
-        self.image_frame=QLabel()
-        self.image_frame.setMinimumSize(424, 240)
-        self.image_frame.setAlignment(Qt.AlignCenter)
-        self.image_frame.setText("test")
+        self.image_frame=bboxCanvas(424, 240)
         self.list_widget=QListWidget()
         self.list_widget.insertItems(0, self.file_list)
         self.list_widget.setMinimumWidth(200)
@@ -60,8 +59,6 @@ class Player(QMainWindow):
         nfileaction.triggered.connect(self.next_file)
         self.videoBar.addAction(nfileaction)
         
-        layout=QVBoxLayout()
-        layout.addWidget(self.image_frame)
         self.addDockWidget(Qt.LeftDockWidgetArea, dock_widget)
 
         self.setCentralWidget(self.image_frame)
