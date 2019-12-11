@@ -4,6 +4,7 @@ from PyQt5.QtGui import *
 import sys
 
 class bboxCanvas(QWidget):
+    new_box_signal=pyqtSignal(int, int, int, int)
     def __init__(self, w, h, *args, **kwargs):
         super(bboxCanvas, self).__init__(*args, **kwargs)
         self.pixmap=None
@@ -91,6 +92,7 @@ class bboxCanvas(QWidget):
                 y, py=py, y
             self.boxes.append([px, py, x-px, y-py])
             self.boxcolors.append(self.defaultBoxColor)
+            self.new_box_signal.emit(px, py, x-px, y-py)
             self.nextbox=None
             self.tpoint=None
         self.update()
@@ -140,6 +142,7 @@ if __name__=="__main__":
             super(MainWindow, self).__init__(*args, **kwargs)
             self.image_label=bboxCanvas(499, 480)
             self.image_label.setPixmap(QPixmap(filename))
+            self.image_label.new_box_signal.connect(self.printbox)
     
             self.activebox=-1
     
@@ -180,7 +183,7 @@ if __name__=="__main__":
             if self.activebox==self.image_label.n_boxes():
                 self.activebox=-1
             else:
-                self.image_label.setColor(self.activebox, "green")
+                self.image_label.setColor(self.activebox, "#5429ff")
     
         def boxCycleDown(self):
             if self.activebox!=-1:
@@ -189,7 +192,11 @@ if __name__=="__main__":
             if self.activebox==-2:
                 self.activebox=self.image_label.n_boxes()-1
             if self.activebox!=-1:
-                self.image_label.setColor(self.activebox, "green")
+                self.image_label.setColor(self.activebox, "#5429ff")
+
+        def printbox(self, x, y, w, h):
+            print("New box!")
+            print("\t", str(x), "\t", str(y), "\t", str(w), "\t", str(h))
 
 
 
