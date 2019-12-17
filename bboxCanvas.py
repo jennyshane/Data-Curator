@@ -16,6 +16,7 @@ class bboxCanvas(QWidget):
         self.tpoint=None
         self.setMinimumSize(w, h)
         self.pixmapBox=self.rect()
+        self.enable=True
         print(self.pixmapBox)
 
     def setPixmap(self, pm):
@@ -77,6 +78,8 @@ class bboxCanvas(QWidget):
             self.update()
 
     def mousePressEvent(self, e):
+        if self.enable==False:
+            return
         x=e.x()
         y=e.y()
         if self.tpoint is None:
@@ -142,6 +145,11 @@ class bboxCanvas(QWidget):
 
     def n_boxes(self):
         return len(self.boxes)
+
+    def setEnable(self, status):
+        self.enable=status
+        if status==False:
+            self.cancelBox()
 
 if __name__=="__main__":
            
