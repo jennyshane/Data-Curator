@@ -208,6 +208,9 @@ class Dataset(object):
             if num_images>0:
                 self.data_files.append({"filename": im_file, "length": num_images, "isLoaded":None, "data":[None]*num_images})
 
+    def n_frames(self, file_idx):
+        return self.data_files[file_idx]["length"]
+
 if __name__=="__main__":
     if len(sys.argv)<2:
         print("needs at least one directory as argument")
