@@ -124,6 +124,14 @@ class bboxCanvas(QWidget):
             del self.boxcolors[idx]
             self.update()
 
+    def setColorDefaults(self, color, boxtype=None):
+        if boxtype==None or boxtype=="default":
+            self.defaultBoxColor=color
+            self.update()
+        elif boxtype=="new":
+            self.activeBoxColor=color
+            self.update()
+
     def setColor(self, idx, color=None):
         if idx<len(self.boxcolors) and idx>-1:
             if color is None:
