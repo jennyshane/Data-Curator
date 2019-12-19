@@ -21,6 +21,13 @@ class Player(QMainWindow):
             self.file_list.append(f.split("/")[-1])
 
         self.labelset=LabelSet(self.file_list, labels[0], labels[1])
+        self.label_colors={}
+        self.label_colors['']=self.palette().color(QPalette.Background)
+        for i in labels[0]:
+            self.label_colors[i]="blue"
+        for i in labels[1]:
+            self.label_colors[i]="red"
+
         
         self.setWindowTitle("test")
         self.status={"playing":False}
@@ -30,6 +37,7 @@ class Player(QMainWindow):
         self.list_widget.setMinimumWidth(200)
         self.list_widget.itemDoubleClicked.connect(lambda i:self.loadfile(i))
         self.list_widget.setCurrentRow(0)
+        self.image_frame.new_box_signal.connect(self.mark_box)
 
         dock_widget=QDockWidget("file list", self)
         dock_widget.setObjectName("Data file list")
@@ -44,9 +52,14 @@ class Player(QMainWindow):
         self.createLabelBar()
         self.createVideoBar()
 
+        self.label_list_widget=QListWidget()
+        self.label_list_widget.setFlow(QListView.LeftToRight)
+        self.label_list_widget.setMaximumHeight(30)
+
         mainWidget=QWidget()
         layout=QVBoxLayout()
         layout.addWidget(self.labelBar)
+        layout.addWidget(self.label_list_widget)
         layout.addWidget(self.image_frame)
         layout.addWidget(self.videoBar)
         mainWidget.setLayout(layout)
@@ -66,14 +79,14 @@ class Player(QMainWindow):
         self.labelBar.addWidget(self.frame_label_selection)
 
         self.lBracketAction=QAction(QIcon("icons/lbracket.png"), "begin label range", self)
-        lBracketAction.setCheckable(True)
-        lBracketAction.triggered.connect(self.l_bracket)
-        self.labelBar.addAction(lBracketAction)
+        self.lBracketAction.setCheckable(True)
+        self.lBracketAction.triggered.connect(self.l_bracket)
+        self.labelBar.addAction(self.lBracketAction)
 
         self.rBracketAction=QAction(QIcon("icons/rbracket.png"), "end label range", self)
-        rBracketAction.setCheckable(True)
-        rBracketAction.triggered.connect(self.r_bracket)
-        self.labelBar.addAction(rBracketAction)
+        self.rBracketAction.setCheckable(True)
+        self.rBracketAction.triggered.connect(self.r_bracket)
+        self.labelBar.addAction(self.rBracketAction)
 
         markFrameAction=QAction(QIcon("icons/flag.png"), "Mark Frame", self)
         markFrameAction.triggered.connect(self.mark_frame)
@@ -85,6 +98,10 @@ class Player(QMainWindow):
         self.box_label_selection=QComboBox()
         self.box_label_selection.addItems(bbox_labels)
         self.labelBar.addWidget(self.box_label_selection)
+
+        manageBtn=QPushButton("Manage Labels")
+        manageBtn.clicked.connect(self.manageLabels)
+        self.labelBar.addWidget(manageBtn)
 
 
     def createVideoBar(self):
@@ -144,6 +161,7 @@ class Player(QMainWindow):
     def next_frame(self):
         if self.data.next():
             self.render_frame()
+            self.fillLabels()
             indices=self.data.get_indices()
             if self.list_widget.currentRow()!=indices[0]:
                 self.list_widget.setCurrentRow(indices[0])
@@ -151,6 +169,7 @@ class Player(QMainWindow):
     def prev_frame(self):
         if self.data.prev():
             self.render_frame()
+            self.fillLabels()
             indices=self.data.get_indices()
             if self.list_widget.currentRow()!=indices[0]:
                 self.list_widget.setCurrentRow(indices[0])
@@ -168,29 +187,40 @@ class Player(QMainWindow):
 
     def mark_frame(self):
         current_label=self.frame_label_selection.currentText()
+        indices=self.data.get_indices()
+        mark_current=False
         if self.lBracketAction.isChecked() and self.rBracketAction.isChecked():
             filenames=self.data.get_files()
             if self.label_range["start"][0]==self.label_range["end"][0]:
                 nframes=self.label_range["end"][1]-self.label_range["start"][1]+1
-                message='Assigning label "'+current_label+'" to '+str(nframes)+" frames in file "+fileneames[self.label_range["start"][0]]+'\nOK?'
+                message='Assigning label "'+current_label+'" to '+str(nframes)+" frames in file "+filenames[self.label_range["start"][0]]+'\nOK?'
                 reply=QMessageBox.question(self, "Confirm", message, QMessageBox.Ok|QMessageBox.Cancel)
                 if reply==QMessageBox.Ok:
                     for i in range(self.label_range["start"][1], self.label_range["end"][1]+1):
-                        self.labelSet.markFrameLabel(self.label_range["start"][0], i, current_label)
+                        self.labelset.markFrameLabel(self.label_range["start"][0], i, current_label)
+                        if [self.label_range["start"][0], i]==indices:
+                            mark_current=True
 
             elif self.label_range["start"][0]<self.label_range["end"][0]:
-                message='Assigning label "'+current_label+'" to range from frame# '+str(self.label_range["start"][1])+
-                "in file "+fileneames[self.label_range["start"][0]]+" to frame# "+str(self.label_range["end"][1])+
-                "in file "+fileneames[self.label_range["end"][0]]+".\nOK?"
+                message='Assigning label "'+current_label+'" to range from frame# '+str(self.label_range["start"][1])+\
+                "in file "+filenames[self.label_range["start"][0]]+" to frame# "+str(self.label_range["end"][1])+\
+                "in file "+filenames[self.label_range["end"][0]]+".\nOK?"
                 reply=QMessageBox.question(self, "Confirm", message, QMessageBox.Ok|QMessageBox.Cancel)
                 if reply==QMessageBox.Ok:
                     for i in range(self.label_range["start"][0]+1, self.label_range["end"][0]):
                         for j in range(0, self.data.n_frames(i)):
-                            self.labelSet.markFrameLabel(i, j, current_label)
+                            self.labelset.markFrameLabel(i, j, current_label)
+                            if [i, j]==indices:
+                                mark_current=True
+
                     for j in range(self.label_range["start"][1], self.data.n_frames(self.label_range["start"][0])):
-                        self.labelSet.markFrameLabel(self.label_range["start"][0], j, current_label)
+                        self.labelset.markFrameLabel(self.label_range["start"][0], j, current_label)
+                        if [self.label_range["start"][0], j]==indices:
+                            mark_current=True
                     for j in range(0, self.label_range["end"][1]+1):
-                        self.labelSet.markFrameLabel(self.label_range["end"][0], j, current_label)
+                        self.labelset.markFrameLabel(self.label_range["end"][0], j, current_label)
+                        if [self.label_range["end"][0], j]==indices:
+                            mark_current=True
 
             else:
                 box=QMessageBox(self)
@@ -206,11 +236,48 @@ class Player(QMainWindow):
             box.setText("Label range end is set, but start is not set!")
             box.exec_()
         else:
-            indices=self.data.get_indices()
-            self.labelSet.markFrameLabel(indices[0], indices[1], current_label)
+            self.labelset.markFrameLabel(indices[0], indices[1], current_label)
+            mark_current=True
+        if mark_current==True:
+            item=QListWidgetItem(current_label)
+            item.setBackground(QColor(self.label_colors[current_label]))
+            self.label_list_widget.addItem(item)
+
+
+    def fillLabels(self):
+        self.label_list_widget.clear()
+        indices=self.data.get_indices()
+        result=self.labelset.getLabels(indices[0], indices[1])
+        if result is None:
+            return
+        flabels, blabels=result
+        self.label_list_widget.clear()
+        if flabels!=[]:
+            for i in flabels:
+                item=QListWidgetItem(i)
+                item.setBackground(QColor(self.label_colors[i]))
+                self.label_list_widget.addItem(item)
+        if blabels!=[]:
+            for label, box in blabels:
+                self.image_frame.addBox(box, self.label_colors[label])
+            
 
     def mark_box(self, x, y, w, h):
-        pass
+        indices=self.data.get_indices()
+        current_label=self.box_label_selection.currentText()
+        self.labelset.markBboxLabel(indices[0], indices[1], current_label, [x, y, w, h])
+
+    def manageLabels(self):
+        dlg=LabelSettings(self.labelset, self.label_colors)
+        if dlg.exec_():
+            self.labelset=dlg.labels
+            self.label_colors=dlg.label_colors
+            frame_labels, box_labels=self.labelset.getLabelNames()
+            self.frame_label_selection.clear()
+            self.frame_label_selection.addItems(frame_labels)
+            self.box_label_selection.clear()
+            self.box_label_selection.addItems(box_labels)
+            self.fillLabels()
 
 print(sys.argv)
 app=QApplication(sys.argv)
