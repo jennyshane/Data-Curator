@@ -44,6 +44,13 @@ class LabelSet(object):
         else:
             self.label_data[fileno][frame]["blabels"].append((label, box))
 
+    def removeByIdx(self, fileno, frame, num):
+        if frame in self.label_data[fileno]:
+            del self.label_data[fileno][frame]["blabels"][num]
+            return True
+        else:
+            return False
+
     def remove(self, fileno, frame, label, num=0):
         if label in self.frame_labels:
             if frame in self.label_data[fileno] and label in self.label_data[fileno][frame]["flabels"]:
