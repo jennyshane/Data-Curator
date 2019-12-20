@@ -52,14 +52,27 @@ class Player(QMainWindow):
         self.createLabelBar()
         self.createVideoBar()
 
+        label_layout=QHBoxLayout()
         self.label_list_widget=QListWidget()
         self.label_list_widget.setFlow(QListView.LeftToRight)
         self.label_list_widget.setMaximumHeight(30)
+        self.activeBox=-1
+        lCycleBtn=QPushButton("<<")
+        lCycleBtn.clicked.connect(self.boxCycleDown)
+        rCycleBtn=QPushButton(">>")
+        rCycleBtn.clicked.connect(self.boxCycleUp)
+        remBtn=QPushButton("remove")
+        remBtn.clicked.connect(self.remActiveBox)
+        label_layout.addWidget(self.label_list_widget)
+        label_layout.addWidget(lCycleBtn)
+        label_layout.addWidget(rCycleBtn)
+        label_layout.addWidget(remBtn)
 
         mainWidget=QWidget()
         layout=QVBoxLayout()
         layout.addWidget(self.labelBar)
-        layout.addWidget(self.label_list_widget)
+        #layout.addWidget(self.label_list_widget)
+        layout.addLayout(label_layout)
         layout.addWidget(self.image_frame)
         layout.addWidget(self.videoBar)
         mainWidget.setLayout(layout)
@@ -68,6 +81,7 @@ class Player(QMainWindow):
         self.label_range={"start":[0, 0], "end":[0, 0]}
 
         self.render_frame()
+        self.fillLabels()
 
     def createLabelBar(self):
         frame_labels, bbox_labels=self.labelset.getLabelNames()
@@ -98,6 +112,7 @@ class Player(QMainWindow):
         self.box_label_selection=QComboBox()
         self.box_label_selection.addItems(bbox_labels)
         self.labelBar.addWidget(self.box_label_selection)
+        self.box_label_selection.currentIndexChanged[str].connect(self.boxLabelSelectCB)
 
         manageBtn=QPushButton("Manage Labels")
         manageBtn.clicked.connect(self.manageLabels)
@@ -126,11 +141,21 @@ class Player(QMainWindow):
         nfileaction=QAction(QIcon("icons/end.png"), "nextfile", self)
         nfileaction.triggered.connect(self.next_file)
         self.videoBar.addAction(nfileaction)
+        spacer=QWidget()
+        spacer.setMinimumWidth(20)
+        self.frameNumberLabel=QLabel()
+        self.fileNumberLabel=QLabel()
+        self.videoBar.addWidget(self.fileNumberLabel)
+        self.videoBar.addWidget(spacer)
+        self.videoBar.addWidget(self.frameNumberLabel)
+
         
   
     def loadfile(self, i):
         self.data.goto_file(self.list_widget.row(i))
+        self.activeBox=-1
         self.render_frame()
+        self.fillLabels()
 
     def playpause(self):
         if self.status["playing"]==False:
@@ -146,7 +171,9 @@ class Player(QMainWindow):
         indices=self.data.get_indices()
         if indices[0]!=len(self.file_list)-1:
             self.data.goto_file(indices[0]+1)
+            self.activeBox=-1
             self.render_frame()
+            self.fillLabels()
             if self.list_widget.currentRow()!=indices[0]:
                 self.list_widget.setCurrentRow(indices[0])
 
@@ -154,12 +181,15 @@ class Player(QMainWindow):
         indices=self.data.get_indices()
         if indices[0]!=0:
             self.data.goto_file(indices[0]-1)
+            self.activeBox=-1
             self.render_frame()
+            self.fillLabels()
             if self.list_widget.currentRow()!=indices[0]:
                 self.list_widget.setCurrentRow(indices[0])
 
     def next_frame(self):
         if self.data.next():
+            self.activeBox=-1
             self.render_frame()
             self.fillLabels()
             indices=self.data.get_indices()
@@ -168,6 +198,7 @@ class Player(QMainWindow):
 
     def prev_frame(self):
         if self.data.prev():
+            self.activeBox=-1
             self.render_frame()
             self.fillLabels()
             indices=self.data.get_indices()
@@ -180,10 +211,12 @@ class Player(QMainWindow):
         self.image_frame.setPixmap(QPixmap.fromImage(qimg).scaled(848, 480))
 
     def l_bracket(self):
-        self.label_range["start"]=self.data.get_indices()
+        if self.lBracketAction.isChecked():
+            self.label_range["start"]=self.data.get_indices()
 
     def r_bracket(self):
-        self.label_range["end"]=self.data.get_indices()
+        if self.rBracketAction.isChecked():
+            self.label_range["end"]=self.data.get_indices()
 
     def mark_frame(self):
         current_label=self.frame_label_selection.currentText()
@@ -203,8 +236,8 @@ class Player(QMainWindow):
 
             elif self.label_range["start"][0]<self.label_range["end"][0]:
                 message='Assigning label "'+current_label+'" to range from frame# '+str(self.label_range["start"][1])+\
-                "in file "+filenames[self.label_range["start"][0]]+" to frame# "+str(self.label_range["end"][1])+\
-                "in file "+filenames[self.label_range["end"][0]]+".\nOK?"
+                " in file "+filenames[self.label_range["start"][0]]+" to frame# "+str(self.label_range["end"][1])+\
+                " in file "+filenames[self.label_range["end"][0]]+".\nOK?"
                 reply=QMessageBox.question(self, "Confirm", message, QMessageBox.Ok|QMessageBox.Cancel)
                 if reply==QMessageBox.Ok:
                     for i in range(self.label_range["start"][0]+1, self.label_range["end"][0]):
@@ -247,18 +280,22 @@ class Player(QMainWindow):
     def fillLabels(self):
         self.label_list_widget.clear()
         indices=self.data.get_indices()
+        self.fileNumberLabel.setText("File # "+str(indices[0])+"/"+str(len(self.file_list)))
+        self.frameNumberLabel.setText("Frame # "+str(indices[1])+"/"+str(self.data.n_frames(indices[0])))
         result=self.labelset.getLabels(indices[0], indices[1])
         if result is None:
+            self.current_flabels=[]
+            self.current_blabels=[]
             return
-        flabels, blabels=result
+        self.current_flabels, self.current_blabels=result
         self.label_list_widget.clear()
-        if flabels!=[]:
-            for i in flabels:
+        if self.current_flabels!=[]:
+            for i in self.current_flabels:
                 item=QListWidgetItem(i)
                 item.setBackground(QColor(self.label_colors[i]))
                 self.label_list_widget.addItem(item)
-        if blabels!=[]:
-            for label, box in blabels:
+        if self.current_blabels!=[]:
+            for label, box in self.current_blabels:
                 self.image_frame.addBox(box, self.label_colors[label])
             
 
@@ -266,6 +303,7 @@ class Player(QMainWindow):
         indices=self.data.get_indices()
         current_label=self.box_label_selection.currentText()
         self.labelset.markBboxLabel(indices[0], indices[1], current_label, [x, y, w, h])
+        self.fillLabels()
 
     def manageLabels(self):
         dlg=LabelSettings(self.labelset, self.label_colors)
@@ -278,6 +316,48 @@ class Player(QMainWindow):
             self.box_label_selection.clear()
             self.box_label_selection.addItems(box_labels)
             self.fillLabels()
+
+    def boxLabelSelectCB(self, label):
+        self.image_frame.setColorDefaults(QColor(self.label_colors[label]), "default")
+        self.image_frame.setColorDefaults(QColor(self.label_colors[label]), "new")
+
+    def boxCycleUp(self):
+        print("!.")
+        print(len(self.current_blabels))
+        if self.activeBox!=-1:
+            activelabel=self.current_blabels[self.activeBox][0]
+            self.image_frame.setColor(self.activeBox, self.label_colors[activelabel])
+        self.activeBox=self.activeBox+1
+        if self.activeBox==len(self.current_blabels):
+            self.activeBox=-1
+        else:
+            self.image_frame.setColor(self.activeBox, "white")
+
+    def boxCycleDown(self):
+        print(".!")
+        if self.activeBox!=-1:
+            activelabel=self.current_blabels[self.activeBox][0]
+            self.image_frame.setColor(self.activeBox, self.label_colors[activelabel])
+        self.activeBox=self.activeBox-1
+        if self.activeBox==-2:
+            self.activeBox=len(self.current_blabels)-1
+        if self.activeBox!=-1:
+            self.image_frame.setColor(self.activeBox, "white")
+
+    def remActiveBox(self):
+        indices=self.data.get_indices()
+        if self.activeBox!=-1:
+            reply=QMessageBox.question(self, "Confirm", "Remove highlighted box with label "+self.current_blabels[self.activeBox][0]+"?", 
+                    QMessageBox.Ok|QMessageBox.Cancel)
+            if reply==QMessageBox.Ok:
+                self.labelset.removeByIdx(indices[0], indices[1], self.activeBox)
+                self.fillLabels()
+        else:
+            frame_label=self.label_list_widget.currentItem().text()
+            reply=QMessageBox.question(self, "Confirm", "Remove label "+frame_label+"?", QMessageBox.Ok|QMessageBox.Cancel)
+            if reply==QMessageBox.Ok:
+                self.labelset.remove(indices[0], indices[1], frame_label)
+                self.fillLabels()
 
 print(sys.argv)
 app=QApplication(sys.argv)
