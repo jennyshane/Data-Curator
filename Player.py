@@ -10,7 +10,6 @@ from PyQt5.QtGui import *
 
 from bboxCanvas import *
 
-
 class Player(QMainWindow):
     def __init__(self, data, labels, *args, **kwargs):
         super(Player, self).__init__(*args, **kwargs)
@@ -27,7 +26,6 @@ class Player(QMainWindow):
             self.label_colors[i]="blue"
         for i in labels[1]:
             self.label_colors[i]="red"
-
         
         self.setWindowTitle("test")
         self.status={"playing":False}
@@ -206,9 +204,12 @@ class Player(QMainWindow):
                 self.list_widget.setCurrentRow(indices[0])
 
     def render_frame(self):
+        indices=self.data.get_indices()
         self.image_frame.clear()
         qimg=QImage(self.data.get_current_frame(), 424, 240, 424*3, QImage.Format_RGB888).rgbSwapped()
         self.image_frame.setPixmap(QPixmap.fromImage(qimg).scaled(848, 480))
+        self.fileNumberLabel.setText("File # "+str(indices[0])+"/"+str(len(self.file_list)))
+        self.frameNumberLabel.setText("Frame # "+str(indices[1])+"/"+str(self.data.n_frames(indices[0])))
 
     def l_bracket(self):
         if self.lBracketAction.isChecked():
@@ -276,28 +277,22 @@ class Player(QMainWindow):
             item.setBackground(QColor(self.label_colors[current_label]))
             self.label_list_widget.addItem(item)
 
-
     def fillLabels(self):
         self.label_list_widget.clear()
         indices=self.data.get_indices()
-        self.fileNumberLabel.setText("File # "+str(indices[0])+"/"+str(len(self.file_list)))
-        self.frameNumberLabel.setText("Frame # "+str(indices[1])+"/"+str(self.data.n_frames(indices[0])))
-        result=self.labelset.getLabels(indices[0], indices[1])
-        if result is None:
-            self.current_flabels=[]
-            self.current_blabels=[]
-            return
-        self.current_flabels, self.current_blabels=result
+        flabels, blabels=self.labelset.getLabels(indices[0], indices[1])
         self.label_list_widget.clear()
-        if self.current_flabels!=[]:
-            for i in self.current_flabels:
+        if flabels!=[]:
+            for i in flabels:
                 item=QListWidgetItem(i)
                 item.setBackground(QColor(self.label_colors[i]))
                 self.label_list_widget.addItem(item)
-        if self.current_blabels!=[]:
-            for label, box in self.current_blabels:
+        if blabels!=[]:
+            for label, box in blabels:
                 self.image_frame.addBox(box, self.label_colors[label])
-            
+            if self.activeBox!=-1:
+                self.image_frame.setColor(self.activeBox, "white")
+
 
     def mark_box(self, x, y, w, h):
         indices=self.data.get_indices()
@@ -322,32 +317,36 @@ class Player(QMainWindow):
         self.image_frame.setColorDefaults(QColor(self.label_colors[label]), "new")
 
     def boxCycleUp(self):
-        print("!.")
-        print(len(self.current_blabels))
+        indices=self.data.get_indices()
+        flabels, blabels=self.labelset.getLabels(indices[0], indices[1])
         if self.activeBox!=-1:
-            activelabel=self.current_blabels[self.activeBox][0]
+            activelabel=blabels[self.activeBox][0]
             self.image_frame.setColor(self.activeBox, self.label_colors[activelabel])
         self.activeBox=self.activeBox+1
-        if self.activeBox==len(self.current_blabels):
+        if self.activeBox==len(blabels):
             self.activeBox=-1
         else:
+            print(self.activeBox)
             self.image_frame.setColor(self.activeBox, "white")
+            print("!")
 
     def boxCycleDown(self):
-        print(".!")
+        indices=self.data.get_indices()
+        flabels, blabels=self.labelset.getLabels(indices[0], indices[1])
         if self.activeBox!=-1:
-            activelabel=self.current_blabels[self.activeBox][0]
+            activelabel=blabels[self.activeBox][0]
             self.image_frame.setColor(self.activeBox, self.label_colors[activelabel])
         self.activeBox=self.activeBox-1
         if self.activeBox==-2:
-            self.activeBox=len(self.current_blabels)-1
+            self.activeBox=len(blabels)-1
         if self.activeBox!=-1:
             self.image_frame.setColor(self.activeBox, "white")
 
     def remActiveBox(self):
         indices=self.data.get_indices()
+        flabels, blabels=self.labelset.getLabels(indices[0], indices[1])
         if self.activeBox!=-1:
-            reply=QMessageBox.question(self, "Confirm", "Remove highlighted box with label "+self.current_blabels[self.activeBox][0]+"?", 
+            reply=QMessageBox.question(self, "Confirm", "Remove highlighted box with label "+blabels[self.activeBox][0]+"?", 
                     QMessageBox.Ok|QMessageBox.Cancel)
             if reply==QMessageBox.Ok:
                 self.labelset.removeByIdx(indices[0], indices[1], self.activeBox)

@@ -78,6 +78,8 @@ class LabelSet(object):
     def getLabels(self, fileno, frame):
         if frame in self.label_data[fileno]:
             return self.label_data[fileno][frame]["flabels"], self.label_data[fileno][frame]["blabels"]
+        else:
+            return [], [] 
 
     def saveLabels(self):
         for fileno, f in enumerate(self.filenames):
