@@ -282,6 +282,7 @@ class Player(QMainWindow):
         indices=self.data.get_indices()
         flabels, blabels=self.labelset.getLabels(indices[0], indices[1])
         self.label_list_widget.clear()
+        self.image_frame.clear()
         if flabels!=[]:
             for i in flabels:
                 item=QListWidgetItem(i)
