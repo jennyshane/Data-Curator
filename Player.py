@@ -273,9 +273,14 @@ class Player(QMainWindow):
             self.labelset.markFrameLabel(indices[0], indices[1], current_label)
             mark_current=True
         if mark_current==True:
-            item=QListWidgetItem(current_label)
-            item.setBackground(QColor(self.label_colors[current_label]))
-            self.label_list_widget.addItem(item)
+            itemCheck=False
+            for i in range(0, self.label_list_widget.count()):
+                if self.label_list_widget.item(i).text()==current_label:
+                    itemCheck=True
+            if itemCheck==False: 
+                item=QListWidgetItem(current_label)
+                item.setBackground(QColor(self.label_colors[current_label]))
+                self.label_list_widget.addItem(item)
 
     def fillLabels(self):
         self.label_list_widget.clear()
