@@ -80,32 +80,33 @@ class LabelSet(object):
             return self.label_data[fileno][frame]["flabels"], self.label_data[fileno][frame]["blabels"]
         else:
             return [], [] 
-
-    def saveLabels(self):
+    
+    def saveLabels(self, indices=None):
         for fileno, f in enumerate(self.filenames):
-            idx=f.find('.')
-            if idx!=-1:
-                prefix=f[0:idx]
-            else:
-                prefix=f
+            if indices!=None and fileno in indices:
+                idx=f.find('.')
+                if idx!=-1:
+                    prefix=f[0:idx]
+                else:
+                    prefix=f
 
-            labelfile=prefix+".labels"
-            file_labels={}
-            for i in self.label_data[fileno]:
-                for flabel in self.label_data[fileno][i]["flabels"]:
-                    if flabel not in file_labels:
-                        file_labels[flabel]=[i]
-                    else:
-                        file_labels[flabel].append(i)
-                for blabel, box in self.label_data[fileno][i]["blabels"]:
-                    if blabel not in file_labels:
-                        file_labels[blabel]=[(i, box)]
-                    else:
-                        file_labels[blabel].append((i, box))
-            if file_labels!={}:
-                f_obj=open(labelfile, "w")
-                json.dump(file_labels, f_obj)
-                f_obj.close()
+                labelfile=prefix+".labels"
+                file_labels={}
+                for i in self.label_data[fileno]:
+                    for flabel in self.label_data[fileno][i]["flabels"]:
+                        if flabel not in file_labels:
+                            file_labels[flabel]=[i]
+                        else:
+                            file_labels[flabel].append(i)
+                    for blabel, box in self.label_data[fileno][i]["blabels"]:
+                        if blabel not in file_labels:
+                            file_labels[blabel]=[(i, box)]
+                        else:
+                            file_labels[blabel].append((i, box))
+                if file_labels!={}:
+                    f_obj=open(labelfile, "w")
+                    json.dump(file_labels, f_obj)
+                    f_obj.close()
 
 
 if __name__=='__main__':
