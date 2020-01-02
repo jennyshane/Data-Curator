@@ -238,7 +238,7 @@ class Player(QMainWindow):
                 if reply==QMessageBox.Ok:
                     for i in range(self.label_range["start"][1], self.label_range["end"][1]+1):
                         self.labelset.markFrameLabel(self.label_range["start"][0], i, current_label)
-                        if [self.label_range["start"][0], i]==indices:
+                        if (self.label_range["start"][0], i)==indices:
                             mark_current=True
 
             elif self.label_range["start"][0]<self.label_range["end"][0]:
@@ -250,16 +250,16 @@ class Player(QMainWindow):
                     for i in range(self.label_range["start"][0]+1, self.label_range["end"][0]):
                         for j in range(0, self.data.n_frames(i)):
                             self.labelset.markFrameLabel(i, j, current_label)
-                            if [i, j]==indices:
+                            if (i, j)==indices:
                                 mark_current=True
 
                     for j in range(self.label_range["start"][1], self.data.n_frames(self.label_range["start"][0])):
                         self.labelset.markFrameLabel(self.label_range["start"][0], j, current_label)
-                        if [self.label_range["start"][0], j]==indices:
+                        if (self.label_range["start"][0], j)==indices:
                             mark_current=True
                     for j in range(0, self.label_range["end"][1]+1):
                         self.labelset.markFrameLabel(self.label_range["end"][0], j, current_label)
-                        if [self.label_range["end"][0], j]==indices:
+                        if (self.label_range["end"][0], j)==indices:
                             mark_current=True
 
             else:
