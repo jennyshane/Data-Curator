@@ -31,7 +31,13 @@ class Player(QMainWindow):
         self.status={"playing":False}
         self.image_frame=bboxCanvas(848, 480)
         self.list_widget=QListWidget()
-        self.list_widget.insertItems(0, self.file_list)
+        for n, i in enumerate(self.file_list):
+            item=QListWidgetItem()
+            item.setText(i)
+            item.setFlags(item.flags()|Qt.ItemIsUserCheckable)
+            item.setCheckState(Qt.Unchecked)
+            self.list_widget.addItem(item)
+        #self.list_widget.insertItems(0, self.file_list)
         self.list_widget.setMinimumWidth(200)
         self.list_widget.itemDoubleClicked.connect(lambda i:self.loadfile(i))
         self.list_widget.setCurrentRow(0)
@@ -283,7 +289,6 @@ class Player(QMainWindow):
                 self.label_list_widget.addItem(item)
 
     def fillLabels(self):
-        self.label_list_widget.clear()
         indices=self.data.get_indices()
         flabels, blabels=self.labelset.getLabels(indices[0], indices[1])
         self.label_list_widget.clear()
