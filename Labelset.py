@@ -83,7 +83,7 @@ class LabelSet(object):
     
     def saveLabels(self, indices=None):
         for fileno, f in enumerate(self.filenames):
-            if indices!=None and fileno in indices:
+            if indices==None or fileno in indices:
                 idx=f.find('.')
                 if idx!=-1:
                     prefix=f[0:idx]
