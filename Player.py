@@ -122,6 +122,14 @@ class Player(QMainWindow):
         manageBtn.clicked.connect(self.manageLabels)
         self.labelBar.addWidget(manageBtn)
 
+        saveCBtn=QPushButton("Save Selected")
+        saveCBtn.clicked.connect(self.saveSelected)
+        self.labelBar.addWidget(saveCBtn)
+
+        saveABtn=QPushButton("Save All")
+        saveABtn.clicked.connect(self.saveAll)
+        self.labelBar.addWidget(saveABtn)
+
 
     def createVideoBar(self):
         self.videoBar=QToolBar("video playback")
@@ -152,8 +160,7 @@ class Player(QMainWindow):
         self.videoBar.addWidget(self.fileNumberLabel)
         self.videoBar.addWidget(spacer)
         self.videoBar.addWidget(self.frameNumberLabel)
-
-        
+       
   
     def loadfile(self, i):
         self.data.goto_file(self.list_widget.row(i))
@@ -368,6 +375,21 @@ class Player(QMainWindow):
             if reply==QMessageBox.Ok:
                 self.labelset.remove(indices[0], indices[1], frame_label)
                 self.fillLabels()
+
+    def saveSelected(self):
+        save_list=[]
+        for i in range(0, self.list_widget.count()):
+            item=self.list_widget.item(i)
+            if item.checkState()==Qt.Checked:
+                save_list.append(i)
+        reply=QMessageBox.question(self, "Confirm", "Save labels for "+str(len(save_list))+" files?", QMessageBox.Ok|QMessageBox.Cancel)
+        if reply==QMessageBox.Ok:
+            self.labelset.saveLabels(save_list)
+
+    def saveAll(self):
+        reply=QMessageBox.question(self, "Confirm", "Save labels for all files?", QMessageBox.Ok|QMessageBox.Cancel)
+        if reply==QMessageBox.Ok:
+            self.labelset.saveLabels()
 
 print(sys.argv)
 app=QApplication(sys.argv)
