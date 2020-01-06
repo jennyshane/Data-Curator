@@ -30,31 +30,14 @@ class Player(QMainWindow):
         self.setWindowTitle("test")
         self.status={"playing":False}
         self.image_frame=bboxCanvas(848, 480)
-        self.list_widget=QListWidget()
-        for n, i in enumerate(self.file_list):
-            item=QListWidgetItem()
-            item.setText(i)
-            item.setFlags(item.flags()|Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Unchecked)
-            self.list_widget.addItem(item)
-        #self.list_widget.insertItems(0, self.file_list)
-        self.list_widget.setMinimumWidth(200)
-        self.list_widget.itemDoubleClicked.connect(lambda i:self.loadfile(i))
-        self.list_widget.setCurrentRow(0)
-        self.image_frame.new_box_signal.connect(self.mark_box)
-
-        dock_widget=QDockWidget("file list", self)
-        dock_widget.setObjectName("Data file list")
-        dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
-        dock_widget.setWidget(self.list_widget)
-        self.addDockWidget(Qt.LeftDockWidgetArea, dock_widget)
-
+        
         self.video_timer=QTimer()
         self.video_timer.timeout.connect(self.next_frame)
         self.video_timer.setInterval(30)
 
         self.createLabelBar()
         self.createVideoBar()
+        self.makeDock()
 
         label_layout=QHBoxLayout()
         self.label_list_widget=QListWidget()
@@ -72,10 +55,11 @@ class Player(QMainWindow):
         label_layout.addWidget(rCycleBtn)
         label_layout.addWidget(remBtn)
 
+        self.image_frame.new_box_signal.connect(self.mark_box)
+
         mainWidget=QWidget()
         layout=QVBoxLayout()
         layout.addWidget(self.labelBar)
-        #layout.addWidget(self.label_list_widget)
         layout.addLayout(label_layout)
         layout.addWidget(self.image_frame)
         layout.addWidget(self.videoBar)
@@ -86,6 +70,39 @@ class Player(QMainWindow):
 
         self.render_frame()
         self.fillLabels()
+
+    def makeDock(self):
+        self.listcheckstate=False
+        self.save_loc_label=QLabel("Save Location: Default")
+        setSaveLocBtn=QPushButton("Set Save Location")
+        setSaveLocBtn.clicked.connect(self.setSaveLocation)
+        self.checktoggle=QPushButton("Check All")
+        self.checktoggle.clicked.connect(self.checkList)
+        self.list_widget=QListWidget()
+        for n, i in enumerate(self.file_list):
+            item=QListWidgetItem()
+            item.setText(i)
+            item.setFlags(item.flags()|Qt.ItemIsUserCheckable)
+            item.setCheckState(Qt.Unchecked)
+            self.list_widget.addItem(item)
+        #self.list_widget.insertItems(0, self.file_list)
+        self.list_widget.setMinimumWidth(200)
+        self.list_widget.itemDoubleClicked.connect(lambda i:self.loadfile(i))
+        self.list_widget.setCurrentRow(0)
+
+        dwidget=QWidget()
+        layout=QVBoxLayout()
+        layout.addWidget(self.save_loc_label)
+        layout.addWidget(setSaveLocBtn)
+        layout.addWidget(self.list_widget)
+        layout.addWidget(self.checktoggle)
+        dwidget.setLayout(layout)
+
+        dock_widget=QDockWidget("file list", self)
+        dock_widget.setObjectName("Data file list")
+        dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
+        dock_widget.setWidget(dwidget)
+        self.addDockWidget(Qt.LeftDockWidgetArea, dock_widget)
 
     def createLabelBar(self):
         frame_labels, bbox_labels=self.labelset.getLabelNames()
@@ -376,6 +393,25 @@ class Player(QMainWindow):
                 self.labelset.remove(indices[0], indices[1], frame_label)
                 self.fillLabels()
 
+    def checkList(self):
+        if self.listcheckstate==False:
+            self.listcheckstate=True
+            self.checktoggle.setText("Uncheck All")
+            for i in range(0, self.list_widget.count()):
+                item=self.list_widget.item(i)
+                item.setCheckState(Qt.Checked)
+        else:
+            self.listcheckstate=False
+            self.checktoggle.setText("Check All")
+            for i in range(0, self.list_widget.count()):
+                item=self.list_widget.item(i)
+                item.setCheckState(Qt.Unchecked)
+
+    def setSaveLocation(self):
+        new_dir=QFileDialog.getExistingDirectory(self, "Select a folder to save label data", ".")
+        self.labelset.setSaveDir(new_dir)
+        self.save_loc_label.setText("Save Location: "+new_dir)
+    
     def saveSelected(self):
         save_list=[]
         for i in range(0, self.list_widget.count()):
