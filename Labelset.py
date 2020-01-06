@@ -10,6 +10,7 @@ class LabelSet(object):
         self.label_data=[]
         for f in filenames:
             self.label_data.append({})
+        self.saveLoc=None
         
 
     def addFrameLabel(self, label):
@@ -81,6 +82,16 @@ class LabelSet(object):
         else:
             return [], [] 
     
+    def setSaveDir(self, directory=None):
+        if directory!=None:
+            if not os.path.isdir(directory):
+                print("that directory does not exist")
+                return
+            else:
+                if directory[-1]!='/':
+                    directory=directory+"/"
+        self.saveLoc=directory
+    
     def saveLabels(self, indices=None):
         for fileno, f in enumerate(self.filenames):
             if indices==None or fileno in indices:
@@ -89,6 +100,12 @@ class LabelSet(object):
                     prefix=f[0:idx]
                 else:
                     prefix=f
+                if self.saveLoc!=None:
+                    idx=prefix.rfind('/')
+                    if idx==-1:
+                        prefix=self.saveLoc+prefix
+                    else:
+                        prefix=self.saveLoc+prefix[idx+1:]
 
                 labelfile=prefix+".labels"
                 file_labels={}
@@ -107,7 +124,6 @@ class LabelSet(object):
                     f_obj=open(labelfile, "w")
                     json.dump(file_labels, f_obj)
                     f_obj.close()
-
 
 if __name__=='__main__':
     testfiles=["vid01", "vid03", "vid04", "vid05", "vid06", "vid07", "vid08", "vid09"]
