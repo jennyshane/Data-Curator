@@ -1,0 +1,1 @@
+This tool is intended to be used for labeling frame-by-frame camera data for the winlab intersection project. I'll be honest, the code is a bit of a mess but it's good enough for now. Uses PyQt5 and python3. Call with the directories containing data as command line arguments. 
